@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Listing - Amazon Listings Generator{% endblock %}
+
+{% block content %}
+<style>
+.file-upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #fafafa;
+}
+
+.file-upload-area:hover {
+    border-color: #007bff;
+    background-color: #f0f8ff;
+}
+
+.image-preview {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.image-preview-item {
+    display: inline-block;
+    margin: 10px;
+    position: relative;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.image-preview-item img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+}
+
+.image-preview-item button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.image-preview-item button:hover {
+    background: #c82333;
+}
+</style>
+<div class="card">
+    <h2>
+        <i class="fas fa-plus"></i>
+        Crear Nuevo Listing
+    </h2>
+    
+    <form id="listingForm" method="post" action="/api/listings/">
+        <div class="form-group">
+            <label for="title">
+                <i class="fas fa-tag"></i>
+                Título del Producto *
+            </label>
+            <input type="text" id="title" name="original_title" class="form-control" required 
+                   placeholder="Ej: Mochila Deportiva Nike">
+        </div>
+
+        <div class="form-group">
+            <label for="description">
+                <i class="fas fa-align-left"></i>
+                Descripción del Producto *
+            </label>
+            <textarea id="description" name="original_description" class="form-control" rows="6" required
+                      placeholder="Describe tu producto detalladamente..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <i class="fas fa-images"></i>
+                Imágenes del Producto
+            </label>
+            <div class="file-upload-area" id="fileUploadArea">
+                <div style="text-align: center;">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+                    <p style="font-size: 1.2rem; margin-bottom: 0.5rem;">Arrastra y suelta imágenes aquí</p>
+                    <p style="color: var(--dark-gray);">o haz clic para seleccionar archivos</p>
+                    <small style="color: var(--dark-gray);">PNG, JPG, WEBP (máx. 5MB cada una)</small>
+                </div>
+                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+            </div>
+            <div id="imagePreview" class="image-preview"></div>
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem;">
+            <button type="button" class="btn btn-primary" id="submitBtn">
+                <i class="fas fa-save"></i>
+                Crear Listing
+            </button>
+            <a href="/" class="btn btn-secondary">
+                <i class="fas fa-times"></i>
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<div id="result" style="display: none; margin-top: 2rem;">
+    <div class="card">
+        <h3 style="color: green;">¡Listing creado exitosamente!</h3>
+        <p id="resultMessage"></p>
+        <a href="/listings" class="btn btn-primary">Ver todos los listings</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+console.log('🚀 Script loaded');
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('📄 DOM loaded');
+    
+    const form = document.getElementById('listingForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const resultDiv = document.getElementById('result');
+    const resultMessage = document.getElementById('resultMessage');
+    const fileUploadArea = document.getElementById('fileUploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const imagePreview = document.getElementById('imagePreview');
+    
+    console.log('🔍 Elements found:', {
+        form: !!form,
+        submitBtn: !!submitBtn,
+        resultDiv: !!resultDiv,
+        resultMessage: !!resultMessage,
+        fileUploadArea: !!fileUploadArea,
+        fileInput: !!fileInput,
+        imagePreview: !!imagePreview
+    });
+
+    if (!form) {
+        console.error('❌ FORM NOT FOUND!');
+        return;
+    }
+
+    console.log('✅ Adding submit listener to form');
+    
+    let selectedFiles = [];
+
+    // File upload handling
+    fileUploadArea.addEventListener('click', () => fileInput.click());
+    fileUploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        fileUploadArea.style.backgroundColor = '#f0f8ff';
+        fileUploadArea.style.borderColor = '#007bff';
+    });
+    fileUploadArea.addEventListener('dragleave', () => {
+        fileUploadArea.style.backgroundColor = '';
+        fileUploadArea.style.borderColor = '';
+    });
+    fileUploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        fileUploadArea.style.backgroundColor = '';
+        fileUploadArea.style.borderColor = '';
+        handleFiles(e.dataTransfer.files);
+    });
+    fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    function handleFiles(files) {
+        console.log('📸 Handling files:', files.length);
+        for (let file of files) {
+            if (file.type.startsWith('image/') && file.size <= 5 * 1024 * 1024) {
+                selectedFiles.push(file);
+                displayImagePreview(file);
+                console.log('✅ Added file:', file.name);
+            } else {
+                alert(`${file.name} no es válido. Solo imágenes menores a 5MB.`);
+            }
+        }
+    }
+
+    function displayImagePreview(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'image-preview-item';
+            previewItem.style.cssText = `
+                display: inline-block;
+                margin: 10px;
+                position: relative;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+                overflow: hidden;
+            `;
+            previewItem.innerHTML = `
+                <img src="${e.target.result}" alt="Preview" style="width: 150px; height: 150px; object-fit: cover;">
+                <button type="button" onclick="removeImage(${selectedFiles.length - 1})" 
+                        style="position: absolute; top: 5px; right: 5px; background: red; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
+            `;
+            imagePreview.appendChild(previewItem);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    window.removeImage = function(index) {
+        console.log('🗑️ Removing image at index:', index);
+        selectedFiles.splice(index, 1);
+        imagePreview.innerHTML = '';
+        selectedFiles.forEach((file, idx) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'image-preview-item';
+                previewItem.style.cssText = `
+                    display: inline-block;
+                    margin: 10px;
+                    position: relative;
+                    border: 2px solid #ddd;
+                    border-radius: 8px;
+                    overflow: hidden;
+                `;
+                previewItem.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview" style="width: 150px; height: 150px; object-fit: cover;">
+                    <button type="button" onclick="removeImage(${idx})" 
+                            style="position: absolute; top: 5px; right: 5px; background: red; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; cursor: pointer;">&times;</button>
+                `;
+                imagePreview.appendChild(previewItem);
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+    
+    // Use click event instead of submit
+    submitBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        console.log('🖱️ Button clicked - starting process');
+        
+        // Prevent any default form submission
+        if (e.target.form) {
+            e.target.form.onsubmit = function() { return false; };
+        }
+        
+        // Disable button
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+        
+        // Get form data directly from inputs
+        const titleInput = document.getElementById('title');
+        const descriptionInput = document.getElementById('description');
+        
+        console.log('📝 Title value:', titleInput.value);
+        console.log('📝 Description value:', descriptionInput.value);
+        console.log('📸 Selected files:', selectedFiles.length);
+        
+        // Step 1: Upload images if any
+        let imageUrls = [];
+        if (selectedFiles.length > 0) {
+            console.log('📸 Uploading images...');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Subiendo imágenes...';
+            
+            try {
+                imageUrls = await uploadImages();
+                console.log('✅ Images uploaded:', imageUrls);
+            } catch (error) {
+                console.error('❌ Image upload failed:', error);
+                alert('Error subiendo imágenes: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save"></i> Crear Listing';
+                return;
+            }
+        }
+        
+        const data = {
+            original_title: titleInput.value.trim(),
+            original_description: descriptionInput.value.trim(),
+            images: imageUrls
+        };
+        
+        console.log('📝 Data to send:', data);
+        
+        try {
+            const response = await fetch('/api/listings/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            console.log('📡 Response status:', response.status);
+            
+            if (response.ok) {
+                const result = await response.json();
+                console.log('✅ Success:', result);
+                
+                // Show success message
+                resultMessage.innerHTML = `
+                    <strong>ID:</strong> ${result.id}<br>
+                    <strong>Título:</strong> ${result.original_title}<br>
+                    <strong>Estado:</strong> ${result.status}
+                `;
+                resultDiv.style.display = 'block';
+                form.style.display = 'none';
+                
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Error response:', errorText);
+                alert('Error: ' + errorText);
+            }
+            
+        } catch (error) {
+            console.error('❌ Network error:', error);
+            alert('Error de conexión: ' + error.message);
+        }
+        
+        // Re-enable button
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save"></i> Crear Listing';
+    });
+    
+    async function uploadImages() {
+        const formData = new FormData();
+        selectedFiles.forEach(file => formData.append('files', file));
+
+        const response = await fetch('/api/products/upload-images/', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error('Error uploading images: ' + errorText);
+        }
+        
+        const result = await response.json();
+        return result.uploaded_files.map(file => file.path);
+    }
+});
+</script>
+{% endblock %}

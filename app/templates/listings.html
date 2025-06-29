@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+
+{% block title %}Mis Listings - Amazon Listings Generator{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h2>
+            <i class="fas fa-list"></i>
+            Mis Listings
+        </h2>
+        <div style="display: flex; gap: 1rem; align-items: center;">
+            <!-- View Toggle -->
+            <div class="view-toggle" style="display: flex; border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+                <button id="cardViewBtn" class="toggle-btn active" style="padding: 0.5rem 1rem; border: none; background: var(--primary-color); color: white; cursor: pointer;">
+                    <i class="fas fa-th-large"></i>
+                    Tarjetas
+                </button>
+                <button id="listViewBtn" class="toggle-btn" style="padding: 0.5rem 1rem; border: none; background: #f8f9fa; color: var(--text-color); cursor: pointer;">
+                    <i class="fas fa-list"></i>
+                    Lista
+                </button>
+            </div>
+            <a href="/create" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Nuevo Listing
+            </a>
+        </div>
+    </div>
+
+    <div id="listingsContainer">
+        <div style="text-align: center; padding: 2rem;">
+            <div class="spinner" style="margin: 0 auto 1rem;"></div>
+            <p>Cargando listings...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Listing Detail Modal -->
+<div id="listingModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow-y: auto;">
+    <div class="modal-content" style="position: relative; background: white; margin: 2rem auto; border-radius: 8px; max-width: 800px; width: 90%;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; border-bottom: 1px solid var(--border-color);">
+            <h3 id="modalTitle">Detalle del Listing</h3>
+            <button onclick="closeModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+        
+        <div id="modalContent" style="padding: 1.5rem;">
+            <!-- Content will be loaded here -->
+        </div>
+        
+        <div style="padding: 1.5rem; border-top: 1px solid var(--border-color); text-align: right;">
+            <button onclick="closeModal()" class="btn btn-secondary">Cerrar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadListings();
+});
+
+async function loadListings() {
+    try {
+        const response = await fetch('/api/listings/');
+        if (!response.ok) throw new Error('Error loading listings');
+        
+        const listings = await response.json();
+        displayListings(listings);
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('listingsContainer').innerHTML = `
+            <div style="text-align: center; padding: 2rem;">
+                <i class="fas fa-exclamation-circle" style="font-size: 3rem; color: var(--danger-color); margin-bottom: 1rem;"></i>
+                <p>Error cargando listings. <a href="#" onclick="loadListings()">Reintentar</a></p>
+            </div>
+        `;
+    }
+}
+
+function displayListings(listings) {
+    const container = document.getElementById('listingsContainer');
+    
+    if (listings.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 3rem;">
+                <i class="fas fa-inbox" style="font-size: 4rem; color: var(--dark-gray); margin-bottom: 1rem;"></i>
+                <h3>No tienes listings aún</h3>
+                <p style="margin-bottom: 2rem; color: var(--dark-gray);">Crea tu primer listing para empezar a generar contenido optimizado.</p>
+                <a href="/create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Crear mi primer listing
+                </a>
+            </div>
+        `;
+        return;
+    }
+
+    if (currentView === 'card') {
+        displayCardView(listings, container);
+    } else {
+        displayListView(listings, container);
+    }
+}
+
+function displayCardView(listings, container) {
+    const listingsHTML = listings.map(listing => `
+        <div class="listing-card">
+            ${listing.images && listing.images.length > 0 ? 
+                `<img src="${listing.images[0]}" alt="${listing.original_title}">` : 
+                '<div style="height: 200px; background: var(--light-gray); display: flex; align-items: center; justify-content: center;"><i class="fas fa-image" style="font-size: 3rem; color: var(--dark-gray);"></i></div>'
+            }
+            <div class="listing-card-content">
+                <h3>${listing.original_title}</h3>
+                <p>${listing.original_description}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                    <span class="status-badge status-${listing.status}">${getStatusText(listing.status)}</span>
+                    <button onclick="viewListing(${listing.id})" class="btn btn-primary" style="padding: 0.5rem 1rem;">
+                        <i class="fas fa-eye"></i>
+                        Ver
+                    </button>
+                </div>
+                <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--dark-gray);">
+                    <i class="fas fa-calendar"></i>
+                    ${new Date(listing.created_at).toLocaleDateString('es-ES')}
+                </div>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="listings-grid">
+            ${listingsHTML}
+        </div>
+    `;
+}
+
+function displayListView(listings, container) {
+    const listingsHTML = listings.map(listing => `
+        <div class="listing-row" style="display: flex; align-items: center; padding: 1rem; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 1rem; background: white;">
+            <!-- Image thumbnail -->
+            <div style="width: 80px; height: 80px; flex-shrink: 0; margin-right: 1rem;">
+                ${listing.images && listing.images.length > 0 ? 
+                    `<img src="${listing.images[0]}" alt="${listing.original_title}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;">` : 
+                    '<div style="width: 100%; height: 100%; background: var(--light-gray); display: flex; align-items: center; justify-content: center; border-radius: 4px;"><i class="fas fa-image" style="color: var(--dark-gray);"></i></div>'
+                }
+            </div>
+            
+            <!-- Content -->
+            <div style="flex: 1; min-width: 0;">
+                <h4 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">${listing.original_title}</h4>
+                <p style="margin: 0 0 0.5rem 0; color: var(--dark-gray); font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${listing.original_description}</p>
+                <div style="display: flex; align-items: center; gap: 1rem; font-size: 0.8rem; color: var(--dark-gray);">
+                    <span><i class="fas fa-calendar"></i> ${new Date(listing.created_at).toLocaleDateString('es-ES')}</span>
+                    ${listing.generated_title ? '<span><i class="fas fa-robot"></i> Analizado</span>' : ''}
+                    ${listing.optimized_title ? '<span><i class="fas fa-chart-line"></i> Optimizado</span>' : ''}
+                </div>
+            </div>
+            
+            <!-- Status and actions -->
+            <div style="display: flex; align-items: center; gap: 1rem; flex-shrink: 0;">
+                <span class="status-badge status-${listing.status}">${getStatusText(listing.status)}</span>
+                <button onclick="viewListing(${listing.id})" class="btn btn-primary" style="padding: 0.5rem 1rem;">
+                    <i class="fas fa-eye"></i>
+                    Ver
+                </button>
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = `
+        <div class="listings-list">
+            ${listingsHTML}
+        </div>
+    `;
+}
+
+function getStatusText(status) {
+    const statusMap = {
+        'draft': 'Borrador',
+        'analyzed': 'Analizado',
+        'optimized': 'Optimizado'
+    };
+    return statusMap[status] || status;
+}
+
+async function viewListing(listingId) {
+    try {
+        const response = await fetch(`/api/listings/${listingId}`);
+        if (!response.ok) throw new Error('Error loading listing');
+        
+        const listing = await response.json();
+        displayListingDetail(listing);
+        document.getElementById('listingModal').style.display = 'block';
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error cargando el detalle del listing');
+    }
+}
+
+function displayListingDetail(listing) {
+    const modal = document.getElementById('listingModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    
+    modalTitle.textContent = listing.original_title;
+    
+    modalContent.innerHTML = `
+        <div style="display: grid; gap: 2rem;">
+            <!-- Status and Actions -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: var(--light-gray); border-radius: 8px;">
+                <div>
+                    <span class="status-badge status-${listing.status}">${getStatusText(listing.status)}</span>
+                    <p style="margin-top: 0.5rem; color: var(--dark-gray);">
+                        Creado: ${new Date(listing.created_at).toLocaleDateString('es-ES')}
+                    </p>
+                </div>
+                <div>
+                    ${listing.status === 'draft' ? `
+                        <button onclick="runAnalysis(${listing.id})" class="btn btn-primary">
+                            <i class="fas fa-brain"></i> Analizar
+                        </button>
+                    ` : ''}
+                    ${listing.status === 'analyzed' ? `
+                        <button onclick="runOptimization(${listing.id})" class="btn btn-success">
+                            <i class="fas fa-chart-line"></i> Optimizar
+                        </button>
+                    ` : ''}
+                    <button onclick="findSimilarImages(${listing.id})" class="btn btn-info">
+                        <i class="fas fa-search"></i> Buscar Imágenes Similares
+                    </button>
+                    <button onclick="deleteListing(${listing.id})" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Eliminar
+                    </button>
+                </div>
+            </div>
+
+            <!-- Original Content -->
+            <div>
+                <h4><i class="fas fa-edit"></i> Información Original</h4>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                    <p><strong>Título:</strong> ${listing.original_title}</p>
+                    <p><strong>Descripción:</strong> ${listing.original_description}</p>
+                    ${listing.images && listing.images.length > 0 ? `
+                        <div style="margin-top: 1rem;">
+                            <strong>Imágenes:</strong>
+                            <div class="image-preview" style="margin-top: 0.5rem;">
+                                ${listing.images.map(img => `
+                                    <div class="image-preview-item">
+                                        <img src="${img}" alt="Imagen original">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+
+            <!-- Generated Content -->
+            ${listing.generated_title ? `
+                <div>
+                    <h4><i class="fas fa-robot"></i> Contenido Generado</h4>
+                    <div style="background: #e8f5e8; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                        <p><strong>Título:</strong> ${listing.generated_title}</p>
+                        <p><strong>Descripción:</strong> ${listing.generated_description}</p>
+                        ${listing.generated_bullets && listing.generated_bullets.length > 0 ? `
+                            <div style="margin-top: 1rem;">
+                                <strong>Bullet Points:</strong>
+                                <ul style="margin-top: 0.5rem;">
+                                    ${listing.generated_bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        ${listing.keywords && listing.keywords.length > 0 ? `
+                            <div style="margin-top: 1rem;">
+                                <strong>Keywords:</strong>
+                                <div style="margin-top: 0.5rem;">
+                                    ${listing.keywords.map(keyword => `<span class="status-badge status-analyzed" style="margin-right: 0.5rem;">${keyword}</span>`).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Optimized Content -->
+            ${listing.optimized_title ? `
+                <div>
+                    <h4><i class="fas fa-chart-line"></i> Contenido Optimizado</h4>
+                    <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                        <p><strong>Título:</strong> ${listing.optimized_title}</p>
+                        <p><strong>Descripción:</strong> ${listing.optimized_description}</p>
+                        ${listing.optimized_bullets && listing.optimized_bullets.length > 0 ? `
+                            <div style="margin-top: 1rem;">
+                                <strong>Bullet Points:</strong>
+                                <ul style="margin-top: 0.5rem;">
+                                    ${listing.optimized_bullets.map(bullet => `<li>${bullet}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            ` : ''}
+
+            <!-- Additional Images -->
+            ${listing.additional_images && listing.additional_images.length > 0 ? `
+                <div>
+                    <h4><i class="fas fa-images"></i> Imágenes Adicionales Encontradas</h4>
+                    <div class="image-preview" style="margin-top: 1rem;">
+                        ${listing.additional_images.map(img => `
+                            <div class="image-preview-item">
+                                <img src="${img}" alt="Imagen adicional">
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            ` : ''}
+        </div>
+    `;
+}
+
+async function runAnalysis(listingId) {
+    if (!confirm('¿Ejecutar análisis con IA? Esto puede tomar unos minutos.')) return;
+    
+    try {
+        const button = event.target;
+        button.disabled = true;
+        button.innerHTML = '<div class="spinner" style="width: 16px; height: 16px;"></div> Analizando...';
+        
+        const response = await fetch(`/api/listings/${listingId}/analyze`, {method: 'POST'});
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('¡Análisis completado exitosamente!');
+            closeModal();
+            loadListings(); // Refresh the listings
+        } else {
+            alert('Error en el análisis: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error ejecutando el análisis');
+    }
+}
+
+async function runOptimization(listingId) {
+    if (!confirm('¿Ejecutar optimización? Esto mejorará el contenido generado.')) return;
+    
+    try {
+        const button = event.target;
+        button.disabled = true;
+        button.innerHTML = '<div class="spinner" style="width: 16px; height: 16px;"></div> Optimizando...';
+        
+        const response = await fetch(`/api/listings/${listingId}/optimize`, {method: 'POST'});
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('¡Optimización completada exitosamente!');
+            closeModal();
+            loadListings(); // Refresh the listings
+        } else {
+            alert('Error en la optimización: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error ejecutando la optimización');
+    }
+}
+
+async function findSimilarImages(listingId) {
+    if (!confirm('¿Buscar imágenes similares? Esto puede tomar unos minutos.')) return;
+    
+    try {
+        const button = event.target;
+        button.disabled = true;
+        button.innerHTML = '<div class="spinner" style="width: 16px; height: 16px;"></div> Buscando...';
+        
+        const response = await fetch(`/api/listings/${listingId}/find-images`, {method: 'POST'});
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('¡Búsqueda de imágenes completada exitosamente!');
+            closeModal();
+            loadListings(); // Refresh the listings
+        } else {
+            alert('Error en la búsqueda: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error ejecutando la búsqueda de imágenes');
+    } finally {
+        // Re-enable button
+        const button = event.target;
+        if (button) {
+            button.disabled = false;
+            button.innerHTML = '<i class="fas fa-search"></i> Buscar Imágenes Similares';
+        }
+    }
+}
+
+async function deleteListing(listingId) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este listing?')) return;
+    
+    try {
+        const response = await fetch(`/api/listings/${listingId}`, {method: 'DELETE'});
+        if (!response.ok) throw new Error('Error deleting listing');
+        
+        alert('Listing eliminado exitosamente');
+        closeModal();
+        loadListings(); // Refresh the listings
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error eliminando el listing');
+    }
+}
+
+function closeModal() {
+    document.getElementById('listingModal').style.display = 'none';
+}
+
+// View toggle functionality
+let currentView = 'card'; // Default view
+
+document.getElementById('cardViewBtn').addEventListener('click', function() {
+    switchToCardView();
+});
+
+document.getElementById('listViewBtn').addEventListener('click', function() {
+    switchToListView();
+});
+
+function switchToCardView() {
+    currentView = 'card';
+    updateToggleButtons();
+    loadListings(); // Reload with card view
+}
+
+function switchToListView() {
+    currentView = 'list';
+    updateToggleButtons();
+    loadListings(); // Reload with list view
+}
+
+function updateToggleButtons() {
+    const cardBtn = document.getElementById('cardViewBtn');
+    const listBtn = document.getElementById('listViewBtn');
+    
+    if (currentView === 'card') {
+        cardBtn.style.background = 'var(--primary-color)';
+        cardBtn.style.color = 'white';
+        listBtn.style.background = '#f8f9fa';
+        listBtn.style.color = 'var(--text-color)';
+    } else {
+        listBtn.style.background = 'var(--primary-color)';
+        listBtn.style.color = 'white';
+        cardBtn.style.background = '#f8f9fa';
+        cardBtn.style.color = 'var(--text-color)';
+    }
+}
+
+// Close modal when clicking outside
+document.getElementById('listingModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+</script>
+{% endblock %}

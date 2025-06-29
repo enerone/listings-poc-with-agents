@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Simple Frontend</title>
+</head>
+<body>
+    <h1>Test Frontend Simple</h1>
+    <button onclick="testCreateListing()" id="testBtn">Test Create Listing</button>
+    <div id="result" style="margin-top: 20px; padding: 10px; border: 1px solid #ccc;"></div>
+
+    <script>
+        async function testCreateListing() {
+            const resultDiv = document.getElementById('result');
+            const testBtn = document.getElementById('testBtn');
+            
+            resultDiv.innerHTML = 'Iniciando test...';
+            testBtn.disabled = true;
+            
+            try {
+                console.log('🧪 Starting frontend test...');
+                
+                const testData = {
+                    original_title: "Test Frontend - " + Date.now(),
+                    original_description: "Test desde el frontend para verificar si funciona la creación de listings",
+                    images: []
+                };
+                
+                console.log('📝 Test data:', testData);
+                resultDiv.innerHTML += '<br>📝 Datos preparados: ' + JSON.stringify(testData);
+                
+                console.log('🌐 Making POST request...');
+                const response = await fetch('/api/listings/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                console.log('📡 Response status:', response.status);
+                resultDiv.innerHTML += '<br>📡 Status: ' + response.status;
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Error:', errorText);
+                    resultDiv.innerHTML += '<br>❌ Error: ' + errorText;
+                    return;
+                }
+                
+                const result = await response.json();
+                console.log('✅ Success:', result);
+                resultDiv.innerHTML += '<br>✅ Success! ID: ' + result.id;
+                resultDiv.innerHTML += '<br>📋 Listing: ' + JSON.stringify(result, null, 2);
+                
+                // Verify it was created
+                const verifyResponse = await fetch('/api/listings/' + result.id);
+                if (verifyResponse.ok) {
+                    const verifyData = await verifyResponse.json();
+                    console.log('🔍 Verification:', verifyData);
+                    resultDiv.innerHTML += '<br>🔍 Verified: ' + verifyData.original_title;
+                } else {
+                    resultDiv.innerHTML += '<br>⚠️ Could not verify listing';
+                }
+                
+            } catch (error) {
+                console.error('💥 Exception:', error);
+                resultDiv.innerHTML += '<br>💥 Exception: ' + error.message;
+            } finally {
+                testBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

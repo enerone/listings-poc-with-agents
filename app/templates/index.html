@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Inicio - Amazon Listings Generator{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>
+        <i class="fas fa-rocket"></i>
+        Bienvenido al Generador de Listings de Amazon
+    </h2>
+    <p style="font-size: 1.2rem; margin-bottom: 2rem; color: var(--dark-gray);">
+        Crea listings optimizados para Amazon con ayuda de inteligencia artificial.
+        Nuestros agentes analizan tu producto y generan contenido profesional.
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-bottom: 3rem;">
+        <div class="feature-card" style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 8px;">
+            <div style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;">
+                <i class="fas fa-brain"></i>
+            </div>
+            <h3>Agente Analizador</h3>
+            <p>Utiliza DeepSeek-R1 para analizar tu producto y generar títulos, descripciones y bullets optimizados.</p>
+        </div>
+
+        <div class="feature-card" style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 8px;">
+            <div style="font-size: 3rem; color: var(--info-color); margin-bottom: 1rem;">
+                <i class="fas fa-images"></i>
+            </div>
+            <h3>Buscador de Imágenes</h3>
+            <p>Encuentra imágenes similares y complementarias usando APIs de Unsplash y Pexels.</p>
+        </div>
+
+        <div class="feature-card" style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 8px;">
+            <div style="font-size: 3rem; color: var(--success-color); margin-bottom: 1rem;">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Optimizador</h3>
+            <p>Optimiza tu listing siguiendo las mejores prácticas de Amazon para maximizar conversiones.</p>
+        </div>
+    </div>
+
+    <div style="text-align: center;">
+        <h3 style="margin-bottom: 2rem;">¿Cómo funciona?</h3>
+        <div style="display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 2rem;">
+            <div style="text-align: center; max-width: 200px;">
+                <div style="width: 60px; height: 60px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem; font-weight: bold;">1</div>
+                <h4>Carga tu producto</h4>
+                <p>Título, descripción e imágenes</p>
+            </div>
+            <div style="font-size: 2rem; color: var(--dark-gray);">
+                <i class="fas fa-arrow-right"></i>
+            </div>
+            <div style="text-align: center; max-width: 200px;">
+                <div style="width: 60px; height: 60px; background: var(--info-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem; font-weight: bold;">2</div>
+                <h4>IA analiza</h4>
+                <p>Los agentes procesan tu información</p>
+            </div>
+            <div style="font-size: 2rem; color: var(--dark-gray);">
+                <i class="fas fa-arrow-right"></i>
+            </div>
+            <div style="text-align: center; max-width: 200px;">
+                <div style="width: 60px; height: 60px; background: var(--success-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: white; font-size: 1.5rem; font-weight: bold;">3</div>
+                <h4>Listing optimizado</h4>
+                <p>Listo para publicar en Amazon</p>
+            </div>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 3rem;">
+        <a href="/create" class="btn btn-primary" style="font-size: 1.2rem; padding: 1rem 2rem;">
+            <i class="fas fa-plus"></i>
+            Crear mi primer listing
+        </a>
+        <a href="/listings" class="btn btn-secondary" style="font-size: 1.2rem; padding: 1rem 2rem;">
+            <i class="fas fa-list"></i>
+            Ver mis listings
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <h2>
+        <i class="fas fa-lightbulb"></i>
+        Consejos para mejores resultados
+    </h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+        <div>
+            <h4><i class="fas fa-check-circle" style="color: var(--success-color);"></i> Título original claro</h4>
+            <p>Proporciona un título descriptivo con marca, modelo y características principales.</p>
+        </div>
+        <div>
+            <h4><i class="fas fa-check-circle" style="color: var(--success-color);"></i> Descripción detallada</h4>
+            <p>Incluye materiales, dimensiones, usos y beneficios del producto.</p>
+        </div>
+        <div>
+            <h4><i class="fas fa-check-circle" style="color: var(--success-color);"></i> Imágenes de calidad</h4>
+            <p>Sube fotos nítidas que muestren el producto desde diferentes ángulos.</p>
+        </div>
+        <div>
+            <h4><i class="fas fa-check-circle" style="color: var(--success-color);"></i> Información completa</h4>
+            <p>Mientras más detalles proporciones, mejor será el resultado de la IA.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

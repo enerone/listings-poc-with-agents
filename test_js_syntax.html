@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test JavaScript Syntax</title>
+</head>
+<body>
+    <h1>Test de Sintaxis JavaScript</h1>
+    <p>Abre la consola (F12) para ver los logs</p>
+    
+    <script>
+        console.log('✅ JavaScript básico funciona');
+        
+        // Test del código del formulario (simplificado)
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ DOM loaded');
+            
+            // Test async/await
+            async function testAsync() {
+                console.log('✅ Async/await funciona');
+                return 'OK';
+            }
+            
+            testAsync().then(result => {
+                console.log('✅ Promise resolved:', result);
+            });
+            
+            // Test fetch
+            console.log('✅ Testing fetch...');
+            fetch('/api/listings/')
+                .then(response => {
+                    console.log('✅ Fetch response:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('✅ Fetch data:', data);
+                })
+                .catch(error => {
+                    console.error('❌ Fetch error:', error);
+                });
+        });
+    </script>
+</body>
+</html>
